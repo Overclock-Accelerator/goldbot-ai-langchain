@@ -12,13 +12,13 @@ export default function ChatHeader({ onClear, showClear }: ChatHeaderProps) {
             GoldBot
           </h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-            Ask me about precious metals.
+          Have a question about precious metals? I can help you with that.
           </p>
         </div>
         {showClear && onClear && (
           <button
             onClick={onClear}
-            className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:scale-105 transition-all duration-200 cursor-pointer"
           >
             Clear Chat
           </button>
