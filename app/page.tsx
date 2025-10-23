@@ -1,16 +1,33 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ChatHeader from "@/components/ChatHeader";
 import SampleQuestions from "@/components/SampleQuestions";
 import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
-import Plasma from "@/components/Plasma";
+import LoadingIndicator from "@/components/LoadingIndicator";
 
 interface Message {
   id: number;
   text: string;
   isUser: boolean;
+  usedTool?: boolean;
+  toolInfo?: {
+    toolName?: string;
+    description?: string;
+  };
+  chartData?: any;
+}
+
+interface ChatResponse {
+  success: boolean;
+  response: string;
+  usedTool?: boolean;
+  toolResults?: unknown;
+  toolsUsed?: string[]; // Array of tool names that were used
+  timestamp?: string;
+  error?: string;
+  chartData?: any;
 }
 
 const ALL_QUESTIONS = [
@@ -24,6 +41,7 @@ const ALL_QUESTIONS = [
   "Compare the current gold price to last year's average",
   "What is driving the recent changes in palladium prices?",
   "Show me the price trend for gold over the last quarter",
+  "Chart the gold price over the last 12 months",
 ];
 
 // Shuffle array helper function
@@ -41,11 +59,17 @@ export default function Home() {
   const [inputValue, setInputValue] = useState("");
   const [displayedQuestions, setDisplayedQuestions] = useState<string[]>([]);
   const [animatingIndices, setAnimatingIndices] = useState<Set<number>>(new Set());
+  const [isLoading, setIsLoading] = useState(false);
 
   // Initialize and shuffle questions on mount
   useEffect(() => {
     const shuffled = shuffleArray(ALL_QUESTIONS);
-    setDisplayedQuestions(shuffled.slice(0, 4));
+    // Use setTimeout to avoid calling setState synchronously in effect
+    const timeoutId = setTimeout(() => {
+      setDisplayedQuestions(shuffled.slice(0, 4));
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Auto-rotate individual questions randomly (only when no messages)
@@ -83,61 +107,117 @@ export default function Home() {
       }, 300);
     };
 
-    // Rotate a random question every 2.5 seconds
+    // Rotate a random question every 5 seconds (reduced frequency for better performance)
     const interval = setInterval(() => {
       rotateRandomQuestion();
-    }, 2500);
+    }, 5000);
 
     return () => {
       clearInterval(interval);
     };
   }, [messages.length]);
 
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = async (text: string) => {
     const newMessage: Message = {
       id: Date.now(),
       text,
       isUser: true,
     };
-    
-    setMessages((prev) => [...prev, newMessage]);
 
-    // Simulate bot response (placeholder for future API integration)
-    setTimeout(() => {
+    setMessages((prev) => [...prev, newMessage]);
+    setIsLoading(true);
+
+    try {
+      // Create conversation history from current messages
+      const conversationHistory = messages.map(msg => ({
+        role: msg.isUser ? 'user' : 'assistant',
+        content: msg.text
+      }));
+
+      // Use standard API for all queries
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: text,
+          conversationHistory
+        }),
+      });
+
+      const data: ChatResponse = await response.json();
+
+      // Log the full response for debugging
+      console.log('Chat API Response:', data);
+
+      if (!data.success) {
+        console.error('Chat API Error:', data.error);
+        throw new Error(data.error || 'Failed to get response from LLM');
+      }
+
+      // Extract tool information from the API response
+      let toolInfo = undefined;
+      if (data.usedTool && data.toolsUsed && data.toolsUsed.length > 0) {
+        // Use the first tool that was used
+        const primaryTool = data.toolsUsed[0];
+
+        // Map tool names to descriptions
+        const toolDescriptions: Record<string, string> = {
+          'get_spot_price': 'Fetched current precious metals pricing data',
+          'get_historical_data': 'Analyzed historical price trends and calculated changes',
+          'search_metal_news': 'Searched for news and events about precious metals',
+          'calculate': 'Performed mathematical calculations',
+          'get_time_chart_data': 'Generated price trend chart data'
+        };
+
+        toolInfo = {
+          toolName: primaryTool,
+          description: toolDescriptions[primaryTool] || 'Used an AI tool to process your request'
+        };
+      }
+
       const botResponse: Message = {
         id: Date.now() + 1,
-        text: "This is a placeholder response. API integration coming soon!",
+        text: data.response,
+        isUser: false,
+        usedTool: data.usedTool,
+        toolInfo,
+        chartData: data.chartData
+      };
+
+      setMessages((prev) => [...prev, botResponse]);
+
+      // Log tool usage for demonstration purposes
+      if (data.usedTool) {
+        console.log('🔧 LLM used tool:', data.toolResults);
+      }
+
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorResponse: Message = {
+        id: Date.now() + 1,
+        text: "I apologize, but I encountered an error processing your request. Please try again.",
         isUser: false,
       };
-      setMessages((prev) => [...prev, botResponse]);
-    }, 500);
+      setMessages((prev) => [...prev, errorResponse]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleClearMessages = () => {
+  const handleClearMessages = useCallback(() => {
     setMessages([]);
     setInputValue('');
-  };
+  }, []);
 
-  const handleQuestionClick = (question: string) => {
+  const handleQuestionClick = useCallback((question: string) => {
     setInputValue(question);
-  };
+  }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900 dark:to-black relative">
-      {/* Background Plasma Effect */}
-      <div className="absolute inset-0 z-0 opacity-30">
-        <Plasma 
-          color="#F5C344"
-          speed={0.3}
-          direction="forward"
-          scale={1.2}
-          opacity={0.6}
-          mouseInteractive={true}
-        />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900 dark:to-black">
+      <div className="flex flex-col h-screen">
         {messages.length > 0 && (
           <ChatHeader onClear={handleClearMessages} showClear={true} />
         )}
@@ -156,18 +236,29 @@ export default function Home() {
                   key={message.id}
                   message={message.text}
                   isUser={message.isUser}
+                  usedTool={message.usedTool}
+                  toolInfo={message.toolInfo}
+                  chartData={message.chartData}
                 />
               ))}
+
+              {/* Loading indicator */}
+              {isLoading && (
+                <div className="mb-6">
+                  <LoadingIndicator message="Analyzing precious metals data..." />
+                </div>
+              )}
             </div>
           )}
         </div>
 
         <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white to-transparent dark:from-black dark:via-black dark:to-transparent pb-6 pt-8">
           <div className="max-w-3xl mx-auto px-4">
-            <ChatInput 
+            <ChatInput
               onSubmit={handleSendMessage}
               value={inputValue}
               onChange={setInputValue}
+              disabled={isLoading}
             />
           </div>
         </div>
