@@ -33,7 +33,7 @@ interface ChatResponse {
 const ALL_QUESTIONS = [
   "What is the current price of gold?",
   "What was the gold to silver ratio on 10/15/2025?",
-  "How much is my 32 grams of 24k worth?",
+  "How much is my 32 grams of 24k gold worth?",
   "How has the price of palladium changed over the last 10 weeks?",
   "How much has the price of gold increased this year?",
   "Have any world events impacted the price of platinum this year?",
