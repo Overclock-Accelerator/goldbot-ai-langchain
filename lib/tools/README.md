@@ -1,6 +1,17 @@
-# LLM Tools
+# LLM Tools - Educational Guide
 
 This folder contains all the tools that the LLM (Claude) can use to perform specific tasks. Each tool is organized in its own subfolder for clarity and maintainability.
+
+## 🎓 **LEARNING OBJECTIVE**
+
+This codebase demonstrates how to implement **tool calling** (also called function calling) with Large Language Models (LLMs). Tool calling allows LLMs to interact with external systems, APIs, and databases, vastly expanding what they can do beyond just generating text.
+
+**What You'll Learn:**
+- How to define tools that an LLM can understand
+- How LLMs decide when to use tools
+- The multi-turn conversation pattern for tool execution
+- How to structure tool results for LLM consumption
+- Best practices for system prompts and tool organization
 
 ## 📁 Folder Structure
 
@@ -19,11 +30,71 @@ lib/tools/
     └── utils.ts           # Date parsing and Excel utilities
 ```
 
-## 🔧 How Tools Work
+## 🔧 How Tool Calling Works - The Complete Workflow
 
-1. **Tool Definition** (`definition.ts`): Defines what the tool does and what parameters it accepts
-2. **Tool Execution** (`execute.ts`): Contains the actual code that runs when Claude calls the tool
-3. **Tool Index** (`index.ts`): Exports everything for easy importing
+Understanding tool calling requires knowing about **three key files**:
+
+### 1. **Tool Definition** (`definition.ts`)
+This is the "contract" between you and the LLM. It describes:
+- **What** the tool does
+- **When** to use it
+- **What parameters** it needs
+- **What values** are valid
+
+**Key Point:** The LLM ONLY sees the definition, not the implementation!
+
+**Example:** See `lib/tools/spot-price/definition.ts`
+
+### 2. **Tool Execution** (`execute.ts`)
+This contains the actual implementation - the code that runs when the tool is called:
+- Makes API calls
+- Performs calculations
+- Queries databases
+- Returns structured results
+
+**Key Point:** The LLM never executes this code - WE execute it on the LLM's behalf!
+
+**Example:** See `lib/tools/spot-price/execute.ts`
+
+### 3. **LLM Orchestration** (`lib/llm/anthropic-service.ts`)
+This is the "glue" that connects everything:
+- Sends user messages + tool definitions to the LLM
+- Receives tool requests from the LLM
+- Executes the requested tools
+- Sends results back to the LLM
+- Gets final natural language response
+
+**This is the MOST IMPORTANT file to understand!**
+
+## 📊 The Tool Calling Flow
+
+Here's what happens when a user asks: "What's the price of gold?"
+
+```
+1. User: "What's the price of gold?"
+   ↓
+2. Orchestrator sends to LLM:
+   - User message
+   - System prompt (explains when to use tools)
+   - Tool definitions (what tools are available)
+   ↓
+3. LLM analyzes and responds:
+   "I'll use the get_spot_price tool"
+   tool_use { name: "get_spot_price", input: { metal: "XAU" } }
+   ↓
+4. Orchestrator executes the tool:
+   executeSpotPriceTool("XAU") → { price: 2650, currency: "USD", ... }
+   ↓
+5. Orchestrator sends tool results back to LLM:
+   "Here's the result from get_spot_price: {price: 2650...}"
+   ↓
+6. LLM generates natural response:
+   "The current price of gold is $2,650 per ounce."
+   ↓
+7. User sees: "The current price of gold is $2,650 per ounce."
+```
+
+**This multi-turn pattern is the KEY to tool calling!**
 
 ## 📋 Available Tools
 
@@ -86,3 +157,79 @@ export * from './execute';
 ## 🔄 Integration with LLM
 
 Tools are automatically available to Claude through the LLM service in `lib/llm/anthropic-service.ts`. Claude decides when and how to use them based on user input and the tool definitions.
+
+---
+
+## 🎯 Key Concepts for Students
+
+### Concept 1: Separation of Definition and Execution
+The LLM sees the **definition** but never the **execution code**. This separation:
+- Keeps tool descriptions concise and clear
+- Allows you to change implementation without updating the LLM
+- Makes testing easier (mock execution, test orchestration)
+
+### Concept 2: The LLM is the Decision Maker
+**You don't tell the LLM which tool to use** - it decides based on:
+- The user's query
+- The tool descriptions
+- The system prompt guidance
+
+This is powerful because the LLM can:
+- Choose the right tool for the job
+- Use multiple tools in sequence
+- Decide when NO tools are needed
+
+### Concept 3: Structured Results are Critical
+Always return results in a consistent structure:
+```typescript
+{
+  success: boolean,
+  data?: {...},      // Present if success = true
+  error?: string     // Present if success = false
+}
+```
+
+This helps the LLM understand what happened and craft appropriate responses.
+
+### Concept 4: System Prompts are Your Teaching Tool
+The system prompt in `anthropic-service.ts` is where you teach the LLM:
+- What each tool does
+- When to use each tool
+- How to prioritize between tools
+- What format to use in responses
+
+**Spend time crafting good system prompts!** They dramatically affect tool usage quality.
+
+## 🚦 Best Practices
+
+### ✅ DO:
+- Write clear, descriptive tool definitions
+- Use meaningful parameter names and descriptions
+- Include examples in tool descriptions when helpful
+- Return structured, consistent results
+- Handle errors gracefully
+- Add logging for debugging
+- Use enums to restrict parameter values when appropriate
+
+### ❌ DON'T:
+- Make tool descriptions too vague or generic
+- Forget to mark required vs optional parameters
+- Return inconsistent result structures
+- Let errors crash - always catch and return error objects
+- Make tools do too many things (keep them focused)
+- Forget to validate inputs
+
+## 📚 Files to Study (in order)
+
+For students learning tool calling, read these files in this order:
+
+1. **`lib/tools/spot-price/definition.ts`** - See how tools are defined
+2. **`lib/tools/spot-price/execute.ts`** - See how tools are implemented
+3. **`lib/tools/index.ts`** - See how tools are organized
+4. **`lib/llm/anthropic-service.ts`** - See the complete orchestration (MOST IMPORTANT!)
+
+## 🔗 Additional Resources
+
+- [Anthropic Tool Use Documentation](https://docs.anthropic.com/claude/docs/tool-use)
+- Each tool folder in this project contains detailed comments
+- The `anthropic-service.ts` file has step-by-step explanations
