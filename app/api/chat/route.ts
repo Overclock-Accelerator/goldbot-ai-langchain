@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processChatWithLLM } from '@/lib/llm/anthropic-service';
+// LANGCHAIN MIGRATION: Switched to LangChain agent service (Epic 4)
+import { processChatWithLangChain } from '@/lib/llm/langchain-service';
+// ROLLBACK: Uncomment line below and comment line above to rollback
+// import { processChatWithLLM } from '@/lib/llm/anthropic-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,10 +25,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Process the chat message with LLM
+    // Process the chat message with LangChain agent
     console.log('Processing chat message:', message);
-    const result = await processChatWithLLM(message, conversationHistory);
-    console.log('LLM result:', result);
+    const result = await processChatWithLangChain(message, conversationHistory);
+    console.log('LangChain agent result:', result);
 
     if (!result.success) {
       console.error('LLM processing failed:', result.error);
