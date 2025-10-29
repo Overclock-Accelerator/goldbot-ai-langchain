@@ -1,0 +1,10 @@
+{
+  "graphs": {
+    "goldbot-agent": "./lib/llm/langchain-service.ts:agent"
+  },
+  "env": ".env.local",
+  "node_version": "20",
+  "dependencies": [
+    "."
+  ]
+}
