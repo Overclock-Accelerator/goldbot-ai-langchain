@@ -1,0 +1,23 @@
+# Dockerfile for LangGraph Platform Server
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install wget for healthcheck
+RUN apk add --no-cache wget
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm ci
+
+# Install LangGraph CLI globally
+RUN npm install -g @langchain/langgraph-cli
+
+# Copy application source
+COPY . .
+
+# Expose LangGraph port
+EXPOSE 2024
+
+# Start LangGraph dev server
+CMD ["npx", "@langchain/langgraph-cli", "dev", "--no-browser", "--port", "2024"]
