@@ -47,8 +47,8 @@ export const MODEL_PROVIDERS: ProviderConfig[] = [
 ];
 
 // Default model selection
-export const DEFAULT_PROVIDER: ModelProvider = 'openai';
-export const DEFAULT_MODEL = 'gpt-5-nano';
+export const DEFAULT_PROVIDER: ModelProvider = 'openrouter';
+export const DEFAULT_MODEL = 'z-ai/glm-4.6';
 
 // Helper functions
 export function getProviderConfig(providerId: ModelProvider): ProviderConfig | undefined {

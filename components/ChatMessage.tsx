@@ -1,7 +1,6 @@
 import ReactMarkdown from 'react-markdown';
 import ToolUsageIndicator from './ToolUsageIndicator';
 import PriceChart from './PriceChart';
-import { MODEL_PROVIDERS } from '@/lib/models/config';
 
 interface ChatMessageProps {
   message: string;
@@ -12,27 +11,14 @@ interface ChatMessageProps {
     description?: string;
   };
   chartData?: any;
-  provider?: string;
-  model?: string;
 }
 
-export default function ChatMessage({ message, isUser, usedTool, toolInfo, chartData, provider, model }: ChatMessageProps) {
+export default function ChatMessage({ message, isUser, usedTool, toolInfo, chartData }: ChatMessageProps) {
   // Don't render empty messages
   if (!message && !chartData) return null;
 
-  // Format provider and model names for display
-  const providerConfig = MODEL_PROVIDERS.find(p => p.id === provider);
-  const modelConfig = providerConfig?.models.find(m => m.id === model);
-  const providerDisplay = providerConfig?.name || provider;
-  const modelDisplay = modelConfig?.name || model;
-
   return (
     <div className={`mb-6 flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
-      {!isUser && provider && model && (
-        <div className="text-xs text-zinc-500 dark:text-zinc-500 mb-1 px-2">
-          {providerDisplay} · {modelDisplay}
-        </div>
-      )}
       <div className={`${chartData ? 'w-full' : 'max-w-[80%]'} rounded-2xl px-5 py-3 ${
         isUser
           ? 'bg-zinc-900 dark:bg-zinc-800 text-white'

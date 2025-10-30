@@ -20,8 +20,6 @@ interface Message {
     description?: string;
   };
   chartData?: any;
-  provider?: string;
-  model?: string;
 }
 
 interface ChatResponse {
@@ -192,9 +190,7 @@ export default function Home() {
         isUser: false,
         usedTool: data.usedTool,
         toolInfo,
-        chartData: data.chartData,
-        provider: selectedProvider,
-        model: selectedModel
+        chartData: data.chartData
       };
 
       setMessages((prev) => [...prev, botResponse]);
@@ -242,20 +238,11 @@ export default function Home() {
       
         <div className={`flex-1 overflow-y-auto pb-32 ${messages.length === 0 ? 'flex items-center justify-center' : 'pt-8'}`}>
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center gap-8 w-full max-w-3xl mx-auto px-4">
-              <SampleQuestions 
-                questions={displayedQuestions}
-                onQuestionClick={handleQuestionClick}
-                animatingIndices={animatingIndices}
-              />
-              <ModelSelector
-                selectedProvider={selectedProvider}
-                selectedModel={selectedModel}
-                onProviderChange={setSelectedProvider}
-                onModelChange={setSelectedModel}
-                compact={false}
-              />
-            </div>
+            <SampleQuestions 
+              questions={displayedQuestions}
+              onQuestionClick={handleQuestionClick}
+              animatingIndices={animatingIndices}
+            />
           ) : (
             <div className="max-w-3xl mx-auto px-4">
               {messages.map((message) => (
@@ -266,17 +253,13 @@ export default function Home() {
                   usedTool={message.usedTool}
                   toolInfo={message.toolInfo}
                   chartData={message.chartData}
-                  provider={message.provider}
-                  model={message.model}
                 />
               ))}
 
               {/* Loading indicator */}
               {isLoading && (
                 <div className="mb-6">
-                  <LoadingIndicator 
-                    message={`Using ${selectedProvider === 'openai' ? 'OpenAI' : selectedProvider === 'anthropic' ? 'Anthropic' : 'OpenRouter'} ${selectedModel}...`} 
-                  />
+                  <LoadingIndicator message="Analyzing precious metals data..." />
                 </div>
               )}
             </div>
@@ -285,6 +268,15 @@ export default function Home() {
 
         <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white to-transparent dark:from-black dark:via-black dark:to-transparent pb-6 pt-8">
           <div className="max-w-3xl mx-auto px-4">
+            <div className="mb-3">
+              <ModelSelector
+                selectedProvider={selectedProvider}
+                selectedModel={selectedModel}
+                onProviderChange={setSelectedProvider}
+                onModelChange={setSelectedModel}
+                compact={true}
+              />
+            </div>
             <ChatInput
               onSubmit={handleSendMessage}
               value={inputValue}
