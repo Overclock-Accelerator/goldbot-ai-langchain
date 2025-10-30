@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 // LANGCHAIN MIGRATION: Switched to LangChain agent service (Epic 4)
 import { processChatWithLangChain } from '@/lib/llm/langchain-service';
+import { isValidProviderAndModel, DEFAULT_PROVIDER, DEFAULT_MODEL } from '@/lib/models/config';
+import type { ModelProvider } from '@/lib/models/config';
 // ROLLBACK: Uncomment line below and comment line above to rollback
 // import { processChatWithLLM } from '@/lib/llm/anthropic-service';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, conversationHistory = [] } = body;
+    const { 
+      message, 
+      conversationHistory = [],
+      provider = DEFAULT_PROVIDER,
+      model = DEFAULT_MODEL
+    } = body;
 
     // Validate input
     if (!message || typeof message !== 'string') {
@@ -25,9 +32,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate provider and model
+    if (!isValidProviderAndModel(provider, model)) {
+      return NextResponse.json(
+        { error: `Invalid provider (${provider}) or model (${model})` },
+        { status: 400 }
+      );
+    }
+
     // Process the chat message with LangChain agent
     console.log('Processing chat message:', message);
-    const result = await processChatWithLangChain(message, conversationHistory);
+    console.log('Using provider:', provider, 'model:', model);
+    const result = await processChatWithLangChain(
+      message, 
+      conversationHistory, 
+      provider as ModelProvider, 
+      model
+    );
     console.log('LangChain agent result:', result);
 
     if (!result.success) {

@@ -20,55 +20,71 @@
 // ============================================================================
 
 import { createAgent } from "langchain";
-// import { ChatAnthropic } from "@langchain/anthropic";
+import { ChatAnthropic } from "@langchain/anthropic";
 import { ChatOpenAI } from "@langchain/openai";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 import { allLangChainTools } from '@/lib/tools/langchain-tools';
+import type { ModelProvider } from '@/lib/models/config';
 
-// Validate API key
-if (!process.env.ANTHROPIC_API_KEY) {
-  throw new Error('ANTHROPIC_API_KEY environment variable is not set');
+// ============================================================================
+// MODEL FACTORY - Dynamic Model Instantiation
+// ============================================================================
+//
+// Creates the appropriate model instance based on provider and model name.
+// This allows users to switch between different AI providers at runtime.
+//
+// PROVIDERS:
+// - OpenAI: Uses ChatOpenAI with OpenAI API
+// - Anthropic: Uses ChatAnthropic with Anthropic API
+// - OpenRouter: Uses ChatOpenAI with OpenRouter's API endpoint
+//
+function createModelInstance(provider: ModelProvider, modelName: string): BaseChatModel {
+  const maxTokens = 2000;
+
+  switch (provider) {
+    case 'openai':
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error('OPENAI_API_KEY environment variable is not set');
+      }
+      return new ChatOpenAI({
+        modelName,
+        openAIApiKey: process.env.OPENAI_API_KEY,
+        maxTokens,
+      });
+
+    case 'anthropic':
+      if (!process.env.ANTHROPIC_API_KEY) {
+        throw new Error('ANTHROPIC_API_KEY environment variable is not set');
+      }
+      return new ChatAnthropic({
+        modelName,
+        anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+        maxTokens,
+      });
+
+    case 'openrouter':
+      if (!process.env.OPENROUTER_API_KEY) {
+        throw new Error('OPENROUTER_API_KEY environment variable is not set');
+      }
+      return new ChatOpenAI({
+        modelName,
+        apiKey: process.env.OPENROUTER_API_KEY,
+        maxTokens,
+        configuration: {
+          baseURL: 'https://openrouter.ai/api/v1',
+          defaultHeaders: {
+            'HTTP-Referer': 'https://github.com/goldbot-ai',
+            'X-Title': 'GoldBot AI'
+          }
+        },
+      });
+
+    default:
+      throw new Error(`Unknown provider: ${provider}`);
+  }
 }
-
-// ============================================================================
-// MODEL INITIALIZATION - Explicit Provider Import
-// ============================================================================
-//
-// NOTE: We use ChatAnthropic directly instead of string reference
-// ("anthropic:claude-sonnet-4-5-20250929") because Next.js bundler
-// can't resolve LangChain's dynamic imports at build time.
-//
-// This is a common pattern when using LangChain with Next.js/Webpack.
-//
-// const model = new ChatAnthropic({
-//   modelName: "claude-sonnet-4-5-20250929",
-//   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-//   maxTokens: 2000,
-// });
-
-const model = new ChatOpenAI({
-  modelName: "gpt-5-nano",
-  openAIApiKey: process.env.OPENAI_API_KEY,
-  maxTokens: 2000,
-});
-
-// ============================================================================
-// AGENT CREATION - Single Point of Configuration
-// ============================================================================
-//
-// LangChain's createAgent() handles:
-// - Model connection (explicit ChatAnthropic instance)
-// - Tool registration and invocation
-// - Message formatting and conversation history
-// - Error handling and retry logic
-//
-// This replaces 100+ lines of manual setup in the Anthropic SDK approach.
-//
-const agent = createAgent({
-  model,                    // Explicit model instance (works with Next.js bundler)
-  tools: allLangChainTools, // Tools array (already in LangChain format)
-});
 
 // ============================================================================
 // SYSTEM PROMPT - Copied Verbatim from anthropic-service.ts
@@ -133,10 +149,12 @@ Be conversational and helpful. But try not to offer excessive commentary or advi
 // ============================================================================
 //
 // This single function replaces the entire tool calling workflow:
-// 1. Build message history (system + conversation + new user message)
-// 2. Invoke agent (agent handles tool selection, execution, and response)
-// 3. Extract response and metadata (which tools were used, chart data, etc.)
-// 4. Return formatted result
+// 1. Create model instance based on selected provider and model
+// 2. Create agent with the selected model
+// 3. Build message history (system + conversation + new user message)
+// 4. Invoke agent (agent handles tool selection, execution, and response)
+// 5. Extract response and metadata (which tools were used, chart data, etc.)
+// 6. Return formatted result
 //
 // Compare to anthropic-service.ts:
 // - No manual tool routing (agent decides automatically)
@@ -146,10 +164,25 @@ Be conversational and helpful. But try not to offer excessive commentary or advi
 // ============================================================================
 export async function processChatWithLangChain(
   userMessage: string,
-  conversationHistory: Array<{role: string, content: string}> = []
+  conversationHistory: Array<{role: string, content: string}> = [],
+  provider: ModelProvider = 'openai',
+  modelName: string = 'gpt-5-nano'
 ) {
   try {
     console.log('[LangChain] Processing message:', userMessage);
+    console.log('[LangChain] Using provider:', provider, 'model:', modelName);
+
+    // ========================================================================
+    // Create Dynamic Model and Agent
+    // ========================================================================
+    // Instead of using a pre-configured agent, we create a new model instance
+    // and agent for each request based on the user's selected provider/model.
+    //
+    const model = createModelInstance(provider, modelName);
+    const agent = createAgent({
+      model,
+      tools: allLangChainTools,
+    });
 
     // ========================================================================
     // Build Messages Array
@@ -201,8 +234,8 @@ export async function processChatWithLangChain(
 
     // Extract which tools were used (for logging and frontend display)
     const toolsUsed = result.messages
-      .filter(msg => msg.tool_calls?.length > 0)
-      .flatMap(msg => msg.tool_calls.map(tc => tc.name));
+      .filter((msg: any) => msg.tool_calls?.length > 0)
+      .flatMap((msg: any) => msg.tool_calls.map((tc: any) => tc.name));
 
     console.log('[LangChain] Tools used:', toolsUsed);
 
@@ -214,7 +247,7 @@ export async function processChatWithLangChain(
     //
     let chartData = null;
     const chartToolMsg = result.messages.find(
-      msg => msg.type === 'tool' && msg.name === 'get_time_chart_data'
+      (msg: any) => msg.type === 'tool' && msg.name === 'get_time_chart_data'
     );
 
     if (chartToolMsg) {
@@ -252,9 +285,9 @@ export async function processChatWithLangChain(
 }
 
 // ============================================================================
-// Export Agent for LangGraph Cloud
+// Export Model Factory for Testing and LangGraph Cloud
 // ============================================================================
-// The agent instance can be deployed to LangGraph Cloud for serverless
-// execution, monitoring, and scaling. See docs/architecture/langgraph-cloud.md
+// Export the model creation function for testing purposes and potential
+// LangGraph Cloud deployment scenarios.
 //
-export { agent };
+export { createModelInstance };

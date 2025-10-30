@@ -13,8 +13,15 @@ Get up and running with GoldBot AI in 5 minutes.
 Create a `.env.local` file in the project root:
 
 ```bash
-# Required: Anthropic API Key
+# AI Model Provider API Keys (at least one required)
+# OpenAI - for GPT-5, GPT-5 Mini, GPT-5 Nano models
+OPENAI_API_KEY=sk-...
+
+# Anthropic - for Claude Sonnet 4.5, Claude Haiku 4.5 models
 ANTHROPIC_API_KEY=sk-ant-...
+
+# OpenRouter - for Grok, DeepSeek, GLM models
+OPENROUTER_API_KEY=sk-or-...
 
 # Required: GoldAPI Key (for precious metals pricing)
 GOLDAPI_KEY=goldapi-...
@@ -27,11 +34,23 @@ LANGSMITH_PROJECT=goldbot-ai
 
 ### Getting API Keys
 
+**OpenAI API Key:**
+1. Sign up at https://platform.openai.com/
+2. Navigate to API Keys section
+3. Create a new API key
+4. Copy the key (starts with `sk-`)
+
 **Anthropic API Key:**
 1. Sign up at https://console.anthropic.com/
 2. Navigate to API Keys section
 3. Create a new API key
 4. Copy the key (starts with `sk-ant-`)
+
+**OpenRouter API Key:**
+1. Sign up at https://openrouter.ai/
+2. Navigate to Keys section
+3. Create a new API key
+4. Copy the key (starts with `sk-or-`)
 
 **GoldAPI Key:**
 1. Sign up at https://www.goldapi.io/
@@ -195,7 +214,6 @@ npx @langchain/langgraph-cli@latest dev --tunnel --verbose
 
 ## Next Steps
 
-- **Docker Deployment**: See [DOCKER.md](./DOCKER.md) for containerized deployment
 - **LangChain Migration**: See [MIGRATING-TO-LANGCHAIN.md](./MIGRATING-TO-LANGCHAIN.md) for architecture details
 - **Production Deployment**: See [DEPLOYMENT-QUICKSTART.md](./DEPLOYMENT-QUICKSTART.md) for production setup
 

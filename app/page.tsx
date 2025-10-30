@@ -2,10 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import ChatHeader from "@/components/ChatHeader";
+import ModelSelector from "@/components/ModelSelector";
 import SampleQuestions from "@/components/SampleQuestions";
 import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
 import LoadingIndicator from "@/components/LoadingIndicator";
+import { DEFAULT_PROVIDER, DEFAULT_MODEL } from "@/lib/models/config";
+import type { ModelProvider } from "@/lib/models/config";
 
 interface Message {
   id: number;
@@ -17,6 +20,8 @@ interface Message {
     description?: string;
   };
   chartData?: any;
+  provider?: string;
+  model?: string;
 }
 
 interface ChatResponse {
@@ -60,6 +65,8 @@ export default function Home() {
   const [displayedQuestions, setDisplayedQuestions] = useState<string[]>([]);
   const [animatingIndices, setAnimatingIndices] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<ModelProvider>(DEFAULT_PROVIDER);
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
 
   // Initialize and shuffle questions on mount
   useEffect(() => {
@@ -142,7 +149,9 @@ export default function Home() {
         },
         body: JSON.stringify({
           message: text,
-          conversationHistory
+          conversationHistory,
+          provider: selectedProvider,
+          model: selectedModel
         }),
       });
 
@@ -183,7 +192,9 @@ export default function Home() {
         isUser: false,
         usedTool: data.usedTool,
         toolInfo,
-        chartData: data.chartData
+        chartData: data.chartData,
+        provider: selectedProvider,
+        model: selectedModel
       };
 
       setMessages((prev) => [...prev, botResponse]);
@@ -219,16 +230,32 @@ export default function Home() {
     <div className="flex flex-col h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900 dark:to-black">
       <div className="flex flex-col h-screen">
         {messages.length > 0 && (
-          <ChatHeader onClear={handleClearMessages} showClear={true} />
+          <ChatHeader 
+            onClear={handleClearMessages} 
+            showClear={true}
+            selectedProvider={selectedProvider}
+            selectedModel={selectedModel}
+            onProviderChange={setSelectedProvider}
+            onModelChange={setSelectedModel}
+          />
         )}
       
         <div className={`flex-1 overflow-y-auto pb-32 ${messages.length === 0 ? 'flex items-center justify-center' : 'pt-8'}`}>
           {messages.length === 0 ? (
-            <SampleQuestions 
-              questions={displayedQuestions}
-              onQuestionClick={handleQuestionClick}
-              animatingIndices={animatingIndices}
-            />
+            <div className="flex flex-col items-center gap-8 w-full max-w-3xl mx-auto px-4">
+              <SampleQuestions 
+                questions={displayedQuestions}
+                onQuestionClick={handleQuestionClick}
+                animatingIndices={animatingIndices}
+              />
+              <ModelSelector
+                selectedProvider={selectedProvider}
+                selectedModel={selectedModel}
+                onProviderChange={setSelectedProvider}
+                onModelChange={setSelectedModel}
+                compact={false}
+              />
+            </div>
           ) : (
             <div className="max-w-3xl mx-auto px-4">
               {messages.map((message) => (
@@ -239,13 +266,17 @@ export default function Home() {
                   usedTool={message.usedTool}
                   toolInfo={message.toolInfo}
                   chartData={message.chartData}
+                  provider={message.provider}
+                  model={message.model}
                 />
               ))}
 
               {/* Loading indicator */}
               {isLoading && (
                 <div className="mb-6">
-                  <LoadingIndicator message="Analyzing precious metals data..." />
+                  <LoadingIndicator 
+                    message={`Using ${selectedProvider === 'openai' ? 'OpenAI' : selectedProvider === 'anthropic' ? 'Anthropic' : 'OpenRouter'} ${selectedModel}...`} 
+                  />
                 </div>
               )}
             </div>
