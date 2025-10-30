@@ -20,7 +20,9 @@
 // ============================================================================
 
 import { createAgent } from "langchain";
-import { ChatAnthropic } from "@langchain/anthropic";
+// import { ChatAnthropic } from "@langchain/anthropic";
+import { ChatOpenAI } from "@langchain/openai";
+
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 import { allLangChainTools } from '@/lib/tools/langchain-tools';
 
@@ -39,9 +41,15 @@ if (!process.env.ANTHROPIC_API_KEY) {
 //
 // This is a common pattern when using LangChain with Next.js/Webpack.
 //
-const model = new ChatAnthropic({
-  modelName: "claude-sonnet-4-5-20250929",
-  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+// const model = new ChatAnthropic({
+//   modelName: "claude-sonnet-4-5-20250929",
+//   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+//   maxTokens: 2000,
+// });
+
+const model = new ChatOpenAI({
+  modelName: "gpt-5-nano",
+  openAIApiKey: process.env.OPENAI_API_KEY,
   maxTokens: 2000,
 });
 
