@@ -73,28 +73,11 @@ npm install --legacy-peer-deps
 
 ## 3. Start the Application
 
-You need to run **two** processes:
-
-### Terminal 1: Next.js Frontend
-
 ```bash
 npm run dev
 ```
 
 This starts the Next.js application on **http://localhost:3000**
-
-### Terminal 2: LangGraph Server
-
-```bash
-npx @langchain/langgraph-cli@latest dev --tunnel
-```
-
-This starts the LangGraph Platform server with:
-- **Local API**: http://localhost:2024
-- **Cloudflare Tunnel**: Public URL printed in terminal (e.g., `https://xxx.trycloudflare.com`)
-- **LangGraph Studio**: Connect at https://smith.langchain.com/studio?baseUrl=http://localhost:2024
-
-> **Tip**: The `--tunnel` flag creates a public URL for remote testing and LangGraph Studio access.
 
 ## 4. Access the Application
 
@@ -162,15 +145,9 @@ Try these sample queries:
 └────────┬────────┘
          │
          ▼
-┌─────────────────┐
-│   Next.js App   │
-│  /api/chat      │
-└────────┬────────┘
-         │
-         ▼
 ┌─────────────────┐       ┌──────────────────┐
-│ LangGraph Server│◄─────►│   LangSmith      │
-│  localhost:2024 │       │   (Tracing)      │
+│   Next.js App   │◄─────►│   LangSmith      │
+│  /api/chat      │       │   (Tracing)      │
 └────────┬────────┘       └──────────────────┘
          │
          ▼
@@ -185,61 +162,32 @@ Try these sample queries:
 ### Port Already in Use
 
 ```bash
-# Kill processes on ports 3000 and 2024
-lsof -ti:3000 -ti:2024 | xargs kill -9
-```
-
-### LangGraph Server Not Starting
-
-```bash
-# Ensure you have the latest CLI
-npm install -g @langchain/langgraph-cli@latest
-
-# Run with debug output
-npx @langchain/langgraph-cli@latest dev --tunnel --verbose
+# Kill process on port 3000
+lsof -ti:3000 | xargs kill -9
 ```
 
 ### Environment Variables Not Loading
 
 - Ensure `.env.local` is in the project root
-- Restart both processes after changing env vars
+- Restart the server after changing env vars
 - Check for typos in variable names (case-sensitive)
 
 ### Chat Returns "Internal Server Error"
 
-1. Check that LangGraph server is running (Terminal 2)
-2. Verify `ANTHROPIC_API_KEY` is set correctly
-3. Check LangSmith traces for detailed error info
-4. Look at LangGraph server logs for connection issues
+1. Verify your API keys are set correctly in `.env.local`
+2. Check LangSmith traces for detailed error info if tracing is enabled
+3. Look at the terminal console logs for error details
 
 ## Next Steps
 
 - **LangChain Migration**: See [MIGRATING-TO-LANGCHAIN.md](./MIGRATING-TO-LANGCHAIN.md) for architecture details
-- **Production Deployment**: See [DEPLOYMENT-QUICKSTART.md](./DEPLOYMENT-QUICKSTART.md) for production setup
+- **Production Deployment**: See [DEPLOYMENT-QUICKSTART.md](./DEPLOYMENT-QUICKSTART.md) for optional LangGraph Cloud deployment (not required)
 
 ## Development Tips
 
 ### Hot Reload
 
-Both processes support hot reload:
-- **Next.js**: Automatically reloads on file changes
-- **LangGraph**: Restarts on `langgraph.json` or agent code changes
-
-### LangGraph Studio
-
-Use LangGraph Studio for visual debugging:
-
-1. Open https://smith.langchain.com/studio
-2. Set Base URL: `http://localhost:2024`
-3. Test your agent with the visual interface
-4. Input JSON:
-   ```json
-   {
-     "messages": [
-       {"role": "user", "content": "What is the current gold price?"}
-     ]
-   }
-   ```
+Next.js automatically reloads on file changes for instant feedback during development.
 
 ### Debugging with LangSmith
 

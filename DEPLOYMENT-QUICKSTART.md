@@ -1,12 +1,24 @@
 # LangGraph Deployment Quick Start
 
+> **⚠️ IMPORTANT**: This guide is for **optional** advanced deployment with LangGraph Cloud. Your application works perfectly with just `npm run dev` and LangSmith tracing enabled in `.env.local`.
+>
+> **You only need this guide if you want:**
+> - LangGraph Cloud managed infrastructure
+> - LangGraph Studio visual debugging interface
+> - Advanced streaming capabilities
+> - Hosted agent deployments
+>
+> **For most users, this is NOT required.** See [QUICKSTART.md](./QUICKSTART.md) for the simple setup.
+
+---
+
 **Goal**: Get LangGraph local server running and LangSmith tracing active in <15 minutes.
 
 ## Prerequisites
 
 ✅ Migration complete (all tests passing)
 ✅ Dev server running on http://localhost:3002
-✅ `langgraph.json` created (already done!)
+✅ You want to use LangGraph Cloud features (optional)
 
 ---
 

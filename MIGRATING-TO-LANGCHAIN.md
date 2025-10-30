@@ -398,13 +398,19 @@ messages.push(new HumanMessage(userMessage));
 
 ## Deployment Abstraction: Local vs Cloud
 
+> **⚠️ NOTE**: This section describes an **optional** advanced deployment pattern using LangGraph Cloud. The current application works perfectly with just Next.js (suitable for Vercel deployment) and LangSmith tracing. LangGraph Cloud is only needed for advanced features like managed agents, streaming, and LangGraph Studio visual debugging.
+>
+> **Most users can skip this section.** The simple setup with `npm run dev` and LangSmith tracing is sufficient for production use.
+
+---
+
 ### The Problem
 
 LangChain opens deployment options:
-- **Local**: Direct agent invocation (current, Vercel)
-- **Cloud**: LangGraph Cloud with managed infrastructure, streaming, observability
+- **Local**: Direct agent invocation (current, Vercel) - **Recommended for most users**
+- **Cloud**: LangGraph Cloud with managed infrastructure, streaming, observability - **Optional advanced feature**
 
-**Design Goal**: Single API surface supporting both modes.
+**Design Goal**: Single API surface supporting both modes (if you choose to use LangGraph Cloud).
 
 ### Agent Client Abstraction
 
