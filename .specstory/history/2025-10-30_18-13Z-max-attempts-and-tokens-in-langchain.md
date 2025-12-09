@@ -284,7 +284,9 @@ const agent = createAgent({
 });
 ```
 
-This will limit the agent to a maximum of 4 reasoning loops (tool selection → tool execution → response generation). If it hits this limit, it will return whatever response it has at that point rather than continuing to iterate
+This will limit the agent to a maximum of 4 reasoning loops (tool selection → tool execution → response generation). If it hits this limit, it will return whatever response it has at that point rather than continuing to iterate.
+
+**You're in ask mode** - switch to agent mode if you'd like me to apply this change directly.
 
 ---
 
